@@ -62,6 +62,8 @@ int promhttp_handler(void *cls, struct MHD_Connection *connection, const char *u
         MHD_free(user);
       if(password)
         MHD_free(password);
+      
+      return ret;
     }
     if (!strcmp(default_password, password) && !strcmp(default_user, user) ) {
       const char *buf = prom_collector_registry_bridge(PROM_ACTIVE_REGISTRY);
