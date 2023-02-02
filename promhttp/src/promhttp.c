@@ -50,18 +50,22 @@ int promhttp_handler(void *cls, struct MHD_Connection *connection, const char *u
     return ret;
   }
   if (strcmp(url, "/metrics") == 0) {
-    char *password, *user = MHD_basic_auth_get_username_password(connection, &password);
+    char *password = NULL; 
+    char *user; 
+    user = MHD_basic_auth_get_username_password(connection, &password);
     if (!user || !password) {
       printf("=====================================================\n");
       printf("No username or password");
       printf("=====================================================\n");
       const char *buf = "Unathorized\n";
       struct MHD_Response *response = MHD_create_response_from_buffer(strlen(buf), (void *)buf, MHD_RESPMEM_PERSISTENT);
-      int ret = MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
-      if(user)
+      int ret = MHD_queue_basic_auth_fail_response(connection, "realm", response);
+      if(user != NULL)
         MHD_free(user);
-      if(password)
+      if(password != NULL)
         MHD_free(password);
+      
+      MHD_destroy_response(response);
       
       return ret;
     }
@@ -76,7 +80,7 @@ int promhttp_handler(void *cls, struct MHD_Connection *connection, const char *u
     } else {
       const char *buf = "Unathorized\n";
       struct MHD_Response *response = MHD_create_response_from_buffer(strlen(buf), (void *)buf, MHD_RESPMEM_PERSISTENT);
-      int ret = MHD_queue_response(connection, MHD_HTTP_UNAUTHORIZED, response);
+      int ret = MHD_queue_basic_auth_fail_response(connection, "realm", response);
       MHD_free(user);
       MHD_free(password);
       MHD_destroy_response(response);
