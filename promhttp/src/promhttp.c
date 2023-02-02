@@ -16,6 +16,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "microhttpd.h"
 #include "prom.h"
 
@@ -49,10 +50,10 @@ int promhttp_handler(void *cls, struct MHD_Connection *connection, const char *u
     MHD_destroy_response(response);
     return ret;
   }
+  
   if (strcmp(url, "/metrics") == 0) {
     char *password = NULL; 
-    char *user; 
-    user = MHD_basic_auth_get_username_password(connection, &password);
+    char *user = MHD_basic_auth_get_username_password(connection, &password);
     if (!user || !password) {
       printf("=====================================================\n");
       printf("No username or password");
