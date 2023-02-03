@@ -17,14 +17,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "microhttpd.h"
+#include <microhttpd.h>
 #include "prom.h"
 
 prom_collector_registry_t *PROM_ACTIVE_REGISTRY;
-
-/* Для тесов */
-static const char *default_user = "user";
-static const char *default_password = "password";
 
 void promhttp_set_active_collector_registry(prom_collector_registry_t *active_registry) {
   if (!active_registry) {
@@ -36,61 +32,38 @@ void promhttp_set_active_collector_registry(prom_collector_registry_t *active_re
 
 int promhttp_handler(void *cls, struct MHD_Connection *connection, const char *url, const char *method,
                      const char *version, const char *upload_data, size_t *upload_data_size, void **con_cls) {
+  char *password, *user;
+  int fail;
+  struct MHD_Response *response;
+  int ret;
+
   if (strcmp(method, "GET") != 0) {
-    char *buf = "Invalid HTTP Method\n";
-    struct MHD_Response *response = MHD_create_response_from_buffer(strlen(buf), (void *)buf, MHD_RESPMEM_PERSISTENT);
-    int ret = MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
-    MHD_destroy_response(response);
-    return ret;
+    return MHD_NO;
   }
-  if (strcmp(url, "/") == 0) {
-    char *buf = "OK\n";
-    struct MHD_Response *response = MHD_create_response_from_buffer(strlen(buf), (void *)buf, MHD_RESPMEM_PERSISTENT);
-    int ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-    MHD_destroy_response(response);
-    return ret;
-  }
-  
-  if (strcmp(url, "/metrics") == 0) {
-    char *password = NULL; 
-    char *user = MHD_basic_auth_get_username_password(connection, &password);
-    if (!user || !password) {
-      printf("=====================================================\n");
-      printf("No username or password");
-      printf("=====================================================\n");
-      const char *buf = "Unathorized\n";
-      struct MHD_Response *response = MHD_create_response_from_buffer(strlen(buf), (void *)buf, MHD_RESPMEM_PERSISTENT);
-      int ret = MHD_queue_basic_auth_fail_response(connection, "realm", response);
-      if(user != NULL)
-        MHD_free(user);
-      if(password != NULL)
-        MHD_free(password);
-      
-      MHD_destroy_response(response);
-      
-      return ret;
-    }
-    if (!strcmp(default_password, password) && !strcmp(default_user, user) ) {
+
+  password = NULL;
+  user = MHD_basic_auth_get_username_password(connection, &password);
+
+  fail = ((user == NULL) || strcmp(user, getenv("PROMETHEUS_USER")) || strcmp(password, getenv("PROMETHEUS_PASSWORD")));
+
+  if (!user) 
+    MHD_free(user);
+  if (!password) 
+    MHD_free(password);
+
+  if (fail) {
+    const char *buf = "<html><body><h1>Unauthorized</h1></body></html>";
+    response = MHD_create_response_from_buffer(strlen(buf), (void *)buf, MHD_RESPMEM_PERSISTENT);
+    ret = MHD_queue_basic_auth_fail_response(connection, "realm", response);
+  } else {
+    if (strcmp(url, "/metrics") == 0) {
       const char *buf = prom_collector_registry_bridge(PROM_ACTIVE_REGISTRY);
-      struct MHD_Response *response = MHD_create_response_from_buffer(strlen(buf), (void *)buf, MHD_RESPMEM_MUST_FREE);
-      int ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
-      MHD_free(user);
-      MHD_free(password);
-      MHD_destroy_response(response);
-      return ret;
+      response = MHD_create_response_from_buffer(strlen(buf), (void *)buf, MHD_RESPMEM_MUST_FREE);
+      ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
     } else {
-      const char *buf = "Unathorized\n";
-      struct MHD_Response *response = MHD_create_response_from_buffer(strlen(buf), (void *)buf, MHD_RESPMEM_PERSISTENT);
-      int ret = MHD_queue_basic_auth_fail_response(connection, "realm", response);
-      MHD_free(user);
-      MHD_free(password);
-      MHD_destroy_response(response);
-      return ret;
+      ret = MHD_NO;
     }
   }
-  char *buf = "Bad Request\n";
-  struct MHD_Response *response = MHD_create_response_from_buffer(strlen(buf), (void *)buf, MHD_RESPMEM_PERSISTENT);
-  int ret = MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
   MHD_destroy_response(response);
   return ret;
 }
