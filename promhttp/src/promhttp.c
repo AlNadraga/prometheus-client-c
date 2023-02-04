@@ -61,7 +61,9 @@ int promhttp_handler(void *cls, struct MHD_Connection *connection, const char *u
       response = MHD_create_response_from_buffer(strlen(buf), (void *)buf, MHD_RESPMEM_MUST_FREE);
       ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
     } else {
-      ret = MHD_NO;
+      const char *buf = "Bad Request\n";
+      response = MHD_create_response_from_buffer(strlen(buf), (void *)buf, MHD_RESPMEM_PERSISTENT);
+      ret = MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
     }
   }
   MHD_destroy_response(response);
