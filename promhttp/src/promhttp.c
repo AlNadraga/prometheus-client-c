@@ -33,6 +33,8 @@ void promhttp_set_active_collector_registry(prom_collector_registry_t *active_re
 int promhttp_handler(void *cls, struct MHD_Connection *connection, const char *url, const char *method,
                      const char *version, const char *upload_data, size_t *upload_data_size, void **con_cls) {
   char *password, *user;
+  char *env_password = getenv("PROMETHEUS_BASIC_AUTH_PASSWORD");
+  char *env_user = getenv("PROMETHEUS_BASIC_AUTH_USERNAME");
   int fail;
   struct MHD_Response *response;
   int ret;
@@ -44,10 +46,7 @@ int promhttp_handler(void *cls, struct MHD_Connection *connection, const char *u
   password = NULL;
   user = MHD_basic_auth_get_username_password(connection, &password);
 
-  fail = ((user == NULL) 
-          || strcmp(user, getenv("PROMETHEUS_BASIC_AUTH_USERNAME")) 
-          || strcmp(password, getenv("PROMETHEUS_BASIC_AUTH_PASSWORD"))
-        );
+  fail = ((user == NULL) || (!env_password && strcmp(user, env_password)) || (!env_user && strcmp(password, env_user)));
 
   if (!user) 
     MHD_free(user);
