@@ -44,7 +44,10 @@ int promhttp_handler(void *cls, struct MHD_Connection *connection, const char *u
   password = NULL;
   user = MHD_basic_auth_get_username_password(connection, &password);
 
-  fail = ((user == NULL) || strcmp(user, getenv("PROMETHEUS_USER")) || strcmp(password, getenv("PROMETHEUS_PASSWORD")));
+  fail = ((user == NULL) 
+          || strcmp(user, getenv("PROMETHEUS_BASIC_AUTH_USERNAME")) 
+          || strcmp(password, getenv("PROMETHEUS_BASIC_AUTH_PASSWORD"))
+        );
 
   if (!user) 
     MHD_free(user);
