@@ -46,11 +46,12 @@ int promhttp_handler(void *cls, struct MHD_Connection *connection, const char *u
   password = NULL;
   user = MHD_basic_auth_get_username_password(connection, &password);
 
-  fail = ( !user || !password || (env_user && strcmp(user, env_user)) || (env_password && strcmp(password, env_password)));
+  fail = (!user || !password || !env_user || !env_password 
+          || (env_user && strcmp(user, env_user)) || (env_password && strcmp(password, env_password)));
 
-  if (!user) 
+  if (user) 
     MHD_free(user);
-  if (!password) 
+  if (password) 
     MHD_free(password);
 
   if (fail) {
