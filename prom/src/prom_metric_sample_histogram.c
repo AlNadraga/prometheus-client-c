@@ -444,7 +444,7 @@ static const char *prom_metric_sample_histogram_l_value_for_bucket(prom_metric_s
 
   new_values[label_count] = prom_metric_sample_histogram_bucket_to_str(bucket);
 
-  r = prom_metric_formatter_load_l_value(self->metric_formatter, name, NULL, label_count + 1, new_keys, new_values);
+  r = prom_metric_formatter_load_l_value(self->metric_formatter, name, "bucket", label_count + 1, new_keys, new_values);
   if (r) {
     PROM_METRIC_SAMPLE_HISTOGRAM_L_VALUE_FOR_BUCKET_CLEANUP();
     return NULL;
